@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #eef2f3;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #222;
+            margin-bottom: 10px;
+        }
+
+        .welcome {
+            background-color: #0077cc;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background: #fafafa;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-left: 6px solid #0077cc;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        li:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        a {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0077cc;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        small {
+            color: #777;
+        }
+
+        p {
+            margin-top: 8px;
+            color: #333;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: #444;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            color: #0077cc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>News Panel</h2>
+
+        {% if user %}
+            <div class="welcome">Welcome, {{ user.first_name}}</div>
+        {% else %}
+            <div class="welcome" style="background-color: #888;">Welcome, Guest</div>
+        {% endif %}
+        <button id="prefBtn" class="back-link" type="button">Set Preferences</button>
+{% if   show==0  %}
+<div id="prefForm" style="display:none; margin-top:20px;">
+    <form id="preferencesForm">
+        <h3>Select Your Preferences</h3>
+        <label><input type="checkbox" name="topics" value="AI"> AI</label><br>
+        <label><input type="checkbox" name="topics" value="SPACE"> Space</label><br>
+        <label><input type="checkbox" name="topics" value="POLITICS"> Politics</label><br>
+        <label><input type="checkbox" name="topics" value="TECHNOLOGY"> Technology</label><br>
+        <label><input type="checkbox" name="topics" value="SPORTS"> Sports</label><br>
+
+        <button type="submit">Save Preferences</button>
+    </form>
+</div>
+{% endif %}
+        <h3>Latest Articles</h3>
+
+        <ul>
+            {% for article in feeds %}
+                <li>
+                    <a href="{{ article.link }}" target="_blank">{{ article.title }}</a><br>
+                    <small>{{ article.published }}</small>
+                    <p>{{ article.summary.split('</p>')[0] | safe }}</p>
+                    {% if article.author %}
+                        <p><strong>Author:</strong> {{ article.author }}</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+</body>
+<script>
+    document.getElementById('prefBtn').addEventListener('click', function() {
+        var form = document.getElementById('prefForm');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+        } else {
+            form.style.display = 'none';
+        }
+    });
+
+    document.getElementById('preferencesForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+       const selected = Array.from(document.querySelectorAll('input[name ="topics"]:checked')).map(cb =>cb.value);
+       const payload={
+           "category": selected
+       }
+       const response = await fetch("/save_preferences",{
+        method:"POST",
+        headers :{
+            "Content-Type" :"application/json"
+        },
+        body:JSON.stringify(payload)
+       })
+       console.log("Sending payload:", JSON.stringify({ category: selected }));
+      
+       if(response.ok){
+        alert("Preference saved!")
+       }else{
+        console.log("Error in saving preference")
+
+       }
+    });
+</script>
+</html>
