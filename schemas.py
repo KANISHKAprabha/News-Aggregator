@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel,EmailStr
+from pydantic import BaseModel,EmailStr,validator
 from enum import Enum
 
 class UserCreate(BaseModel):
@@ -22,6 +22,11 @@ class UserLogin(BaseModel):
         orm_mode = True
 class UserResponseAfterLogin(BaseModel):
     email: EmailStr
+    @validator('email',pre = True)
+    def strip_email(cls,v):
+        if v is not None:
+            return v.strip()
+        return v
     username: str
     first_name: str
     last_name: str

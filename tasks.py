@@ -5,6 +5,10 @@ from .celery_worker import celery_app
 import aiosmtplib
 from email.message import EmailMessage
 import os
+from google.cloud import translate_v2 as translate
+from dotenv import load_dotenv
+load_dotenv()
+translate_client = translate.Client()
 
 
 @celery_app.task
@@ -41,37 +45,53 @@ def send_email_background(to_email: str, subject: str, body: str):
 
 
 RSS_FEEDS = {
-    "AI": "https://www.analyticsvidhya.com/blog/category/artificial-intelligence/feed/",
-    "SPACE": "https://www.nasa.gov/rss/dyn/breaking_news.rss",
-    "WORLD": "http://feeds.bbci.co.uk/news/world/rss.xml",
-    "POLITICS": "https://feeds.npr.org/1014/rss.xml",
-    "BUSINESS": "https://www.wsj.com/xml/rss/3_7014.xml",
-    "TECHNOLOGY": "https://www.theverge.com/rss/index.xml",
-    "SCIENCE": "https://www.sciencedaily.com/rss/top/science.xml",
-    "ENTERTAINMENT": "https://www.npr.org/rss/rss.php?id=1045",
-    "SPORTS": "https://www.espn.com/espn/rss/news",
-    "HEALTH": "https://www.medicalnewstoday.com/rss",
-    "ENVIRONMENT": "https://www.npr.org/rss/rss.php?id=1039",
-    "AUTOMOTIVE": "https://feeds.techxplore.com/automotive",
+    "AI": "https://rss.feedspot.com/ai_rss_feeds/feed.xml",                 # Top AI feeds including Machine Learning Mastery, MIT, Google :contentReference[oaicite:1]{index=1}
+    "SPACE": "https://www.space.com/feeds/news",                           # Space.com official feed :contentReference[oaicite:2]{index=2}
+    "WORLD": "http://feeds.bbci.co.uk/news/world/rss.xml",                 # BBC World News (kept as is – widely reliable)
+    "POLITICS": "https://www.politico.com/rss/politics08.xml",             # Politico Politics RSS :contentReference[oaicite:3]{index=3}
+    "BUSINESS": "https://www.wsj.com/xml/rss/3_7014.xml",                   # WSJ Business (kept – works)
+    "TECHNOLOGY": "https://www.wired.com/feed/category/gear/latest/rss",   # WIRED Gear or top stories :contentReference[oaicite:4]{index=4}
+    "SCIENCE": "https://www.sciencedaily.com/rss/top/science.xml",         # ScienceDaily (kept – works)
+    "ENTERTAINMENT": "http://feeds.ew.com/ew/latest",                      # Entertainment Weekly latest RSS
+    "SPORTS": "https://www.espn.com/espn/rss/news",                        # ESPN News (kept – works)
+    "HEALTH": "https://www.medicalnewstoday.com/rss",                      # MedicalNewsToday (kept – works)
+    "ENVIRONMENT": "https://www.npr.org/rss/rss.php?id=1039",              # NPR Environment (kept – works)
+    "AUTOMOTIVE": "https://feeds.autoblog.com/weblogsinc/autoblog.xml"     # Autoblog automotive feed
 }
+
 
 @celery_app.task
 def fetch_articles(topics: list[str]) -> list[dict]:
- try:
-    articles = []
-    for topic in topics:
-        if topic in RSS_FEEDS:
-            feed = feedparser.parse(RSS_FEEDS[topic])
-            for entry in feed.entries:
-                summary = entry.get("summary", "").replace("&#8230;", "...").split("The post")[0]
-                articles.append({
-                    "title": entry.get("title", "No Title"),
-                    "link": entry.get("link", "#"),
-                    "summary": summary,
-                    "published": entry.get("published", "N/A"),
-                    "author": entry.get("author", "Unknown")
-                })
-    return articles
- except Exception as e:
-    print(f"Error fetching articles: {e}")
-    raise HTTPException(status_code=500, detail="Failed to fetch articles")
+    try:
+        
+        articles = []
+        for topic in topics:
+            if topic in RSS_FEEDS:
+                feed_url = RSS_FEEDS[topic]
+                feed = feedparser.parse(feed_url)
+
+                if feed.bozo:
+                    print(f"Error parsing feed for topic '{topic}': {feed.bozo_exception}")
+                    continue
+
+                print(f"Fetched {len(feed.entries)} entries for topic: {topic}")
+                for entry in feed.entries:
+                    summary = entry.get("summary", "").replace("&#8230;", "...").split("The post")[0]
+                    articles.append({
+                        "title": entry.get("title", "No Title"),
+                        "link": entry.get("link", "#"),
+                        "summary": summary,
+                        "published": entry.get("published", "N/A"),
+                        "author": entry.get("author", "Unknown")
+                    })
+            else:
+                print("error")
+        print(articles)
+        return articles
+    except Exception as e:
+        print(f"Error fetching articles: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch articles")
+
+
+
+

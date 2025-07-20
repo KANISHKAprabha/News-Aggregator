@@ -92,6 +92,31 @@
         .back-link:hover {
             color: #0077cc;
         }
+        .translate-control {
+    margin-top: 10px;
+}
+
+.translate-btn {
+    background-color: #0077cc;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.translate-btn:hover {
+    background-color: #005fa3;
+}
+
+.lang-select {
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
     </style>
 </head>
 
@@ -119,20 +144,26 @@
     </form>
 </div>
 {% endif %}
+
+
         <h3>Latest Articles</h3>
 
         <ul>
-            {% for article in feeds %}
-                <li>
-                    <a href="{{ article.link }}" target="_blank">{{ article.title }}</a><br>
-                    <small>{{ article.published }}</small>
-                    <p>{{ article.summary.split('</p>')[0] | safe }}</p>
-                    {% if article.author %}
-                        <p><strong>Author:</strong> {{ article.author }}</p>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+    {% for article in feeds %}
+        <li data-article-id="{{ loop.index }}">
+            <a href="{{ article.link }}" target="_blank">{{ article.title }}</a><br>
+            <small>{{ article.published }}</small>
+            <p class="article-summary">{{ article.summary.split('</p>')[0] | safe }}</p>
+
+            {% if article.author %}
+                <p><strong>Author:</strong> {{ article.author }}</p>
+            {% endif %}
+
+            
+        </li>
+    {% endfor %}
+</ul>
+
 
         <a href="/" class="back-link">← Back to Home</a>
     </div>
@@ -147,27 +178,38 @@
         }
     });
 
-    document.getElementById('preferencesForm').addEventListener('submit', async function(event) {
-        event.preventDefault();
-       const selected = Array.from(document.querySelectorAll('input[name ="topics"]:checked')).map(cb =>cb.value);
-       const payload={
-           "category": selected
-       }
-       const response = await fetch("/save_preferences",{
-        method:"POST",
-        headers :{
-            "Content-Type" :"application/json"
-        },
-        body:JSON.stringify(payload)
-       })
-       console.log("Sending payload:", JSON.stringify({ category: selected }));
-      
-       if(response.ok){
-        alert("Preference saved!")
-       }else{
-        console.log("Error in saving preference")
+   document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById('preferencesForm');
+    if (!form) {
+        console.warn("Form #translate-control not found on this page.");
+        return;
+    }
 
-       }
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const selected = Array.from(document.querySelectorAll('input[name ="topics"]:checked')).map(cb => cb.value);
+        const payload = { "category": selected };
+
+        console.log(payload, "line no 187");
+        const response = await fetch("/save_preferences", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        console.log(response, "line no 195");
+
+        if (response.ok) {
+            alert("Preference saved!");
+        } else {
+            console.log("Error in saving preference");
+        }
     });
+});
+
+    
+
 </script>
 </html>
